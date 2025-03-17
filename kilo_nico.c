@@ -167,6 +167,20 @@ void enableRawMode() {
     die("tcsetattr");
 }
 
+int identifyEscapeCaracter(char seq) {
+  switch (seq) {
+    case '1': return HOME_KEY;
+    case '3': return DELETE_KEY;
+    case '4': return END_KEY;
+    case '5': return PAGE_UP;
+    case '6': return PAGE_DOWN;
+    case '7': return HOME_KEY;
+    case '8': return END_KEY;
+  }
+  die("identifyEscapeCaracter: Not implemented yet");
+  return 0;
+}
+
 int editorReadKey() {
   ssize_t nread;
   char c;
@@ -181,15 +195,7 @@ int editorReadKey() {
       if (seq[1] >= '0' && seq[1] <= '9') {
         if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
         if (seq[2] == '~') {
-          switch (seq[1]) {
-            case '1': return HOME_KEY;
-            case '3': return DELETE_KEY;
-            case '4': return END_KEY;
-            case '5': return PAGE_UP;
-            case '6': return PAGE_DOWN;
-            case '7': return HOME_KEY;
-            case '8': return END_KEY;
-          }
+          return identifyEscapeCaracter(seq[1]);
         }
       } else {
         switch (seq[1]) {
