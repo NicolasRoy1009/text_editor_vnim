@@ -39,6 +39,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int));
 #define DEFAULT_TEXT_COLOR (-1)
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
 #define NO_FILETYPE "type inconnu"
+#define ESCAPE_CHAR '\x1b'
 
 
 #define HL_HIGHLIGHT_NUMBERS (1<<0)
@@ -176,9 +177,10 @@ int identifyEscapeCaracterNumber(char seq) {
     case '6': return PAGE_DOWN;
     case '7': return HOME_KEY;
     case '8': return END_KEY;
+    default:
+      die("identifyEscapeCaracterNumber: Not implemented yet");
+      return 0;
   }
-  die("identifyEscapeCaracterNumber: Not implemented yet");
-  return 0;
 }
 
 int identifyEscapeCaracterLetter(char seq) {
@@ -189,9 +191,20 @@ int identifyEscapeCaracterLetter(char seq) {
     case 'D': return ARROW_LEFT;
     case 'H': return HOME_KEY;
     case 'F': return END_KEY;
+    default:
+      die("identifyEscapeCaracterLetter: Not implemented yet");
+      return 0;
   }
-  die("identifyEscapeCaracterLetter: Not implemented yet");
-  return 0;
+}
+
+int identifyEscapeCaracterO(char seq) {
+  switch (seq) {
+    case 'H': return HOME_KEY;
+    case 'F': return END_KEY;
+    default:
+      die("identifyEscapeCaracterLetterO: Not implemented yet");
+      return 0;
+  }
 }
 
 int editorReadKey() {
@@ -202,24 +215,21 @@ int editorReadKey() {
   }
   if (c == '\x1b') {
     char seq[3];
-    if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
-    if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+    if (read(STDIN_FILENO, &seq[0], 1) != 1) return ESCAPE_CHAR;
+    if (read(STDIN_FILENO, &seq[1], 1) != 1) return ESCAPE_CHAR;
     if (seq[0] == '[') {
       if (seq[1] >= '0' && seq[1] <= '9') {
-        if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+        if (read(STDIN_FILENO, &seq[2], 1) != 1) return ESCAPE_CHAR;
         if (seq[2] == '~') {
           return identifyEscapeCaracterNumber(seq[1]);
         }
       } else {
-        return identifyEscapeCaracterNumber(seq[1]);
+        return identifyEscapeCaracterLetter(seq[1]);
       }
     } else if (seq[0] == 'O') {
-      switch (seq[1]) {
-        case 'H': return HOME_KEY;
-        case 'F': return END_KEY;
-      }
+      return identifyEscapeCaracterO(seq[1]);
     }
-    return '\x1b';
+    return ESCAPE_CHAR;
   }
   return c;
 }
