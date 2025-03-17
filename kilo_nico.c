@@ -167,7 +167,7 @@ void enableRawMode() {
     die("tcsetattr");
 }
 
-int identifyEscapeCaracter(char seq) {
+int identifyEscapeCaracterNumber(char seq) {
   switch (seq) {
     case '1': return HOME_KEY;
     case '3': return DELETE_KEY;
@@ -177,7 +177,20 @@ int identifyEscapeCaracter(char seq) {
     case '7': return HOME_KEY;
     case '8': return END_KEY;
   }
-  die("identifyEscapeCaracter: Not implemented yet");
+  die("identifyEscapeCaracterNumber: Not implemented yet");
+  return 0;
+}
+
+int identifyEscapeCaracterLetter(char seq) {
+  switch (seq) {
+    case 'A': return ARROW_UP;
+    case 'B': return ARROW_DOWN;
+    case 'C': return ARROW_RIGHT;
+    case 'D': return ARROW_LEFT;
+    case 'H': return HOME_KEY;
+    case 'F': return END_KEY;
+  }
+  die("identifyEscapeCaracterLetter: Not implemented yet");
   return 0;
 }
 
@@ -195,17 +208,10 @@ int editorReadKey() {
       if (seq[1] >= '0' && seq[1] <= '9') {
         if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
         if (seq[2] == '~') {
-          return identifyEscapeCaracter(seq[1]);
+          return identifyEscapeCaracterNumber(seq[1]);
         }
       } else {
-        switch (seq[1]) {
-          case 'A': return ARROW_UP;
-          case 'B': return ARROW_DOWN;
-          case 'C': return ARROW_RIGHT;
-          case 'D': return ARROW_LEFT;
-          case 'H': return HOME_KEY;
-          case 'F': return END_KEY;
-        }
+        return identifyEscapeCaracterNumber(seq[1]);
       }
     } else if (seq[0] == 'O') {
       switch (seq[1]) {
@@ -214,9 +220,8 @@ int editorReadKey() {
       }
     }
     return '\x1b';
-  } else {
-    return c;
   }
+  return c;
 }
 
 /*** syntax highlighting ***/
