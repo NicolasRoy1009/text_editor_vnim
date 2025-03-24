@@ -1027,7 +1027,7 @@ void editorProcessKeypress() {
     case CTRL_KEY('h'):
     case DELETE_KEY:
       if (c == DELETE_KEY) {
-        editorMoveCursor(ARROW_RIGHT);
+        cursorMoveRight();
       }
       editorDelChar();
       break;
