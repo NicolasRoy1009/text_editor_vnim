@@ -980,6 +980,20 @@ void editorMoveCursor(const int key) {
   }
 }
 
+void editorMoveCursorPage(int key) {
+  if (key == PAGE_UP) {
+    E.cy = E.rowoffset;
+  } else {
+    E.cy = E.rowoffset + E.screenrows - 1;
+    if (E.cy > E.numrows) E.cy = E.numrows;
+  }
+  int times = E.screenrows;
+  key = key == PAGE_UP ? ARROW_UP : ARROW_DOWN;
+  while (times--) {
+    editorMoveCursor(key);
+  }
+}
+
 void editorProcessKeypress() {
   static int quit_times = QUIT_TIMES;
 
@@ -1018,20 +1032,9 @@ void editorProcessKeypress() {
       break;
 
     case PAGE_UP:
-    case PAGE_DOWN: {
-      if (c == PAGE_UP) {
-        E.cy = E.rowoffset;
-      } else {
-        E.cy = E.rowoffset + E.screenrows - 1;
-        if (E.cy > E.numrows) E.cy = E.numrows;
-      }
-      int times = E.screenrows;
-      c = c == PAGE_UP ? ARROW_UP : ARROW_DOWN;
-      while (times--) {
-        editorMoveCursor(c);
-      }
+    case PAGE_DOWN:
+      editorMoveCursorPage(c);
       break;
-    }
 
     case CTRL_KEY('s'):
       editorSave();
