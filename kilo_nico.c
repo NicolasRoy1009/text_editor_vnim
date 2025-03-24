@@ -23,7 +23,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int));
 
 /*** defines ***/
 
-#define KILO_VERSION "0.0.1"
+#define CURRENT_VERSION "0.0.1"
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define ABUF_INIT {NULL, 0}
 #define TAB_STOP 8
@@ -124,16 +124,35 @@ char *C_HL_keywords[] = {
   "void|", NULL
 };
 
+char *JAVA_HL_extensions[] = {".java", NULL};
+char *JAVA_HL_keywords[] = {
+  "abstract", "assert", "break", "case", "catch", "class", "const", "continue",
+  "default", "do", "else", "enum", "extends", "final", "finally", "for", "if",
+  "goto", "implements", "import", "instanceof", "interface", "native", "package",
+  "return", "static", "strictfp", "super", "switch", "synchronized", "this",
+  "throw", "throws", "transient", "try", "volatile", "while"
+  ,"boolean|", "byte|", "char|", "double|", "float|", "int|", "long|", "short|", "new|", "void|",
+  "private|", "protected|","public|", NULL
+};
+
 struct editorSyntax HLDB[] = {
   {
-    "c",
+    "Fichier C",
     C_HL_extensions,
     C_HL_keywords,
     "//",
     "/*" ,
     "*/" ,
     HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
-  },
+  }, {
+    "Fichier Java",
+    JAVA_HL_extensions,
+    JAVA_HL_keywords,
+    "//",
+    "/*" ,
+    "*/" ,
+    HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+  }
 };
 
 void die(const char *s) {
@@ -739,9 +758,9 @@ void editorSetStatusMessage(const char *format, ...) {
 void editorDrawStatusBar(struct append_buffer *ab) {
   abAppend(ab, "\x1b[7m", 4);
   char status[80], rstatus[80];
-  int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
-    E.filename ? E.filename : NO_FILENAME, E.numrows,
-    E.dirtybit ? "(modified)" : "");
+  int len = snprintf(status, sizeof(status), "%.20s%s - %d lines",
+    E.filename ? E.filename : NO_FILENAME,
+    E.dirtybit ? " (Modifié)" : "", E.numrows);
   int rlen = snprintf(rstatus, sizeof(rstatus), "%s %d/%d",
     E.syntax ? E.syntax->filetype : NO_FILETYPE, E.cy + 1, E.numrows);
   if (len > E.screencols) {
@@ -787,7 +806,7 @@ void editorDrawRows(struct append_buffer *ab) {
       if (E.numrows == 0 && y == E.screenrows / 3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
-          "Nico editor -- version %s", KILO_VERSION);
+          "Vnim editor -- version %s", CURRENT_VERSION);
         if (welcomelen > E.screencols) welcomelen = E.screencols;
         int padding = (E.screencols - welcomelen) / 2;
         if (padding) {
@@ -892,11 +911,10 @@ int getWindowSize(int *rows, int *cols) {
     if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
       return -1;
     return getCursorPosition(rows, cols);
-  } else {
-    *cols = ws.ws_col;
-    *rows = ws.ws_row;
-    return 0;
   }
+  *cols = ws.ws_col;
+  *rows = ws.ws_row;
+  return 0;
 }
 
 /*** input ***/
@@ -911,10 +929,10 @@ char *editorPrompt(char *prompt , void (*callback)(char *, int)) {
     int c = editorReadKey();
     if (c ==  DELETE_KEY || c == BACKSPACE || c == CTRL_KEY('h')) {
       if (buflen != 0) {
-        buf[--buflen] = '\0';
+        buf[--buflen] = '\0'; // Remove a caracter from the buffer
       }
     } else if (c == '\x1b') {
-      editorSetStatusMessage("");
+      editorSetStatusMessage(""); // On quitte le prompt
       if (callback) {
         callback(buf, c);
       }
@@ -932,7 +950,12 @@ char *editorPrompt(char *prompt , void (*callback)(char *, int)) {
     } else if (!iscntrl(c) && c < 128) {
       if (buflen == bufsize - 1) {
         bufsize *= 2;
-        buf = realloc(buf, bufsize);
+        char *tmp = realloc(buf, bufsize);
+        if (!tmp) {
+          free(buf);
+          return NULL;
+        }
+        buf = tmp;
       }
       buf[buflen++] = c;
       buf[buflen] = '\0';
@@ -1109,6 +1132,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 // TODO: Retravailer code proprete..
+
 // TODO: Ajouter d'autre langage type (Java, ceux vu en 600c?)
 // TODO: Ajout type de fichier + Meilleur Message
 // TODO: Afficher nombre ligne a gauche
